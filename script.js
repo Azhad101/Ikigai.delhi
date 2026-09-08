@@ -4,11 +4,11 @@
  * "Find what drives you. Build what matters."
  */
 
-import { eventConfig } from "eventConfig.js";
-import { challenges, challengeCategories } from "challenges.js";
-import { operatingSequence } from "schedule.js";
-import { sponsorSystem, communityAlliance } from "sponsors.js";
-import { faqIndex } from "faq.js";
+import { eventConfig } from "./data/eventConfig.js";
+import { challenges, challengeCategories } from "./data/challenges.js";
+import { operatingSequence } from "./data/schedule.js";
+import { sponsorSystem, communityAlliance } from "./data/sponsors.js";
+import { faqIndex } from "./data/faq.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   initHeroConvergenceAnimation();
