@@ -1,0 +1,3003 @@
+/* ==========================================================================
+   IKIGAI — EDITORIAL DESIGN SYSTEM
+   Theme: Deep Forest (#26382F) primary canvas + Muted Vermilion (#B6533C) accent
+          + Warm Ivory (#F5F1E8) text/contrast + Soft Gold (#C8A96B) highlight
+   Philosophy: Japanese Minimalism + Warm Human Creativity + Sunrise + Paper + Ink + Technology
+   ========================================================================== */
+
+:root {
+  /* Core Color Palette */
+  --c-ivory: #F5F1E8;
+  --c-ivory-surface: #FAF7F2;
+  --c-ivory-subtle: #ECE6D9;
+  --c-ivory-dark: #E2DBD0;
+  
+  --c-ink: #F0EDE6;          /* PRIMARY TEXT — warm ivory on forest */
+  --c-ink-light: #E2DBD0;
+  --c-ink-body: #C8C0B4;     /* BODY TEXT — slightly muted ivory */
+  --c-ink-muted: #8A9E93;    /* MUTED — forest-tinted grey */
+  --c-ink-faint: #5E7569;    /* FAINT — very muted forest-grey */
+  
+  --c-forest: #26382F;       /* PRIMARY CANVAS */
+  --c-forest-dark: #1A2821;  /* DEEPER CANVAS */
+  --c-forest-subtle: #32493E;/* ELEVATED SURFACE */
+  --c-forest-tint: #405C4E;  /* CARD SURFACE */
+  
+  --c-vermilion: #B6533C;    /* SECONDARY ACCENT */
+  --c-vermilion-hover: #C05E47;
+  --c-vermilion-soft: rgba(182, 83, 60, 0.18);
+  --c-vermilion-tint: #D67A66;
+  
+  --c-gold: #C8A96B;
+  --c-gold-soft: rgba(200, 169, 107, 0.18);
+  --c-gold-light: #DFCA98;
+  
+  /* Hairline Borders — light lines on deep forest canvas */
+  --c-hairline: rgba(245, 241, 232, 0.10);
+  --c-hairline-strong: rgba(245, 241, 232, 0.20);
+  --c-hairline-forest: rgba(245, 241, 232, 0.14);
+
+  /* Typography Stacks */
+  --font-serif: "Cormorant Garamond", "DM Serif Display", Georgia, serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+
+  /* Layout & Spacing */
+  --max-width: 1240px;
+  --nav-height: 68px;
+
+  /* Restrained Motion Tokens */
+  --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.25, 1, 0.5, 1);
+  --dur-fast: 200ms;
+  --dur-med: 400ms;
+  --dur-slow: 750ms;
+}
+
+/* Base Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-height) + 24px);
+  background-color: var(--c-forest);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  /* Transparent, deliberately: body is a positioned element (relative),
+     so its own opaque background would paint on top of the negative
+     z-index .depth-field backdrop and hide it completely. <html>'s
+     background-color above still supplies a dark fallback/canvas
+     color; the depth field supplies the real, layered atmosphere. */
+  background-color: transparent;
+  color: var(--c-ink-body);
+}
+
+/* Hide the native OS cursor once the custom cursor is running, so the
+   two don't show up on top of each other. JS adds this class only on
+   non-touch pointers (see script.js), and the coarse-pointer media
+   query below is a belt-and-suspenders fallback. */
+html.has-custom-cursor,
+html.has-custom-cursor * {
+  cursor: none;
+}
+
+/* ==========================================================================
+   0. BOOT SEQUENCE — THE THRESHOLD
+   Not a loading bar. A gate opening at first light. The same four
+   pillars from the hero convergence gather from darkness, breathe,
+   converge, and the gate irises open into the page beneath.
+   ========================================================================== */
+
+/* Freeze the page beneath the gate while it's open, so nothing
+   scrolls or reveals itself out of order underneath. */
+body.is-booting {
+  overflow: hidden;
+  height: 100vh;
+}
+
+.threshold-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--c-forest-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* Explicit starting clip-path (rather than none) so the browser
+     has a value to interpolate FROM when .gate-iris sets circle(0%) —
+     without this, clip-path can't animate and just snaps instantly. */
+  clip-path: circle(150% at 50% 50%);
+  transition: opacity 0.9s var(--ease-cinematic),
+              clip-path 1.3s var(--ease-cinematic);
+}
+
+/* Root state once the gate has finished opening: lifted clean out of
+   the layout and out of the accessibility tree. */
+.threshold-gate.gate-open {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.threshold-field {
+  position: relative;
+  width: min(64vh, 520px);
+  height: min(64vh, 520px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.threshold-sun {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--c-vermilion);
+  z-index: 3;
+  opacity: 0;
+  box-shadow: 0 0 18px rgba(182, 83, 60, 0.5);
+  transition: opacity 1.4s var(--ease-cinematic),
+              width 1.6s var(--ease-cinematic),
+              height 1.6s var(--ease-cinematic),
+              box-shadow 1.6s var(--ease-cinematic);
+}
+
+.threshold-gate.gate-breathing .threshold-sun {
+  opacity: 1;
+  animation: thresholdSunBreathe 2.6s ease-in-out infinite alternate;
+}
+
+.threshold-gate.gate-converging .threshold-sun {
+  width: 26px;
+  height: 26px;
+  box-shadow: 0 0 46px rgba(182, 83, 60, 0.85);
+  animation: none;
+  z-index: 2;
+}
+
+/* Once the IKIGAI mark blooms in on top, the sun's job (drawing the
+   eye to center) is done — dissolve it so it doesn't sit mid-glyph. */
+.threshold-gate.gate-marked .threshold-sun {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+@keyframes thresholdSunBreathe {
+  0%   { transform: scale(1);    box-shadow: 0 0 14px rgba(182, 83, 60, 0.35); }
+  100% { transform: scale(1.35); box-shadow: 0 0 26px rgba(182, 83, 60, 0.65); }
+}
+
+.threshold-circles-svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.threshold-circle-group {
+  opacity: 0;
+  transition: opacity 1.2s var(--ease-cinematic),
+              transform 2.2s var(--ease-cinematic);
+  transform-origin: 300px 300px;
+}
+
+.threshold-pillar-circle {
+  stroke: rgba(245, 241, 232, 0.20);
+  stroke-width: 1;
+  fill: rgba(200, 169, 107, 0.03);
+  transition: stroke 1s ease, fill 1s ease, stroke-width 0.6s ease;
+}
+
+.threshold-gate.gate-breathing .threshold-circle-group {
+  opacity: 1;
+}
+
+/* Each pillar starts pulled outward from its hero-resting position,
+   then gravitates inward on gate-converging — same direction logic
+   as the hero stage, so the handoff feels continuous. */
+.tg-love    { transform: translateY(-30px); }
+.tg-good    { transform: translateX(30px); }
+.tg-world   { transform: translateY(30px); }
+.tg-sustain { transform: translateX(-30px); }
+
+.threshold-gate.gate-converging .tg-love    { transform: translateY(45px); }
+.threshold-gate.gate-converging .tg-good    { transform: translateX(-45px); }
+.threshold-gate.gate-converging .tg-world   { transform: translateY(-45px); }
+.threshold-gate.gate-converging .tg-sustain { transform: translateX(45px); }
+
+.threshold-gate.gate-converging .threshold-pillar-circle {
+  stroke: var(--c-vermilion);
+  stroke-width: 1.25;
+  fill: rgba(182, 83, 60, 0.06);
+}
+
+/* Quiet, unhurried lines of text — found, not loaded. One at a time,
+   each dissolving before the next arrives. Deliberately not phrased
+   like a technical loader ("Loading assets…") — phrased like the
+   site's own philosophy voice. */
+.threshold-lines {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+}
+
+.threshold-line {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-ink-muted);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 1.1s var(--ease-cinematic), transform 1.1s var(--ease-cinematic);
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.threshold-line.line-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.threshold-mark {
+  position: absolute;
+  z-index: 4;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--c-ivory);
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 1.1s var(--ease-cinematic), transform 1.1s var(--ease-cinematic);
+  pointer-events: none;
+}
+
+.threshold-gate.gate-converging .threshold-mark {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 0.5s;
+}
+
+/* Sunrise wash that floods the gate just before it irises open —
+   echoes .sunrise-ambient-layer's palette so the handoff into the
+   page reads as one continuous dawn, not a scene cut. Bright and
+   full-bleed at its peak: this is the "first light" beat, it should
+   actually register, not just tint the corners. */
+.threshold-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: radial-gradient(circle at 50% 50%, var(--c-gold-light) 0%, var(--c-vermilion-tint) 45%, var(--c-vermilion) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease-in;
+}
+
+.threshold-gate.gate-flash .threshold-flash {
+  opacity: 1;
+}
+
+.threshold-gate.gate-flash .threshold-flash.flash-fading {
+  opacity: 0;
+  transition: opacity 0.85s ease-out;
+}
+
+/* The iris itself: the gate's visible area shrinks to a point at
+   its own center — the same convergence point the four circles just
+   gathered at — revealing the page beneath. Runs to completion
+   BEFORE the overall opacity fade (see the JS timeline), so the
+   iris motion is actually visible rather than washed out by a
+   simultaneous fade. */
+.threshold-gate.gate-iris {
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path 1.3s var(--ease-cinematic);
+  opacity: 1;
+}
+
+.threshold-skip {
+  position: absolute;
+  bottom: 32px;
+  right: 36px;
+  z-index: 6;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  color: var(--c-ink-faint);
+  background: transparent;
+  border: 1px solid var(--c-hairline-strong);
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.6s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.threshold-gate.gate-breathing .threshold-skip {
+  opacity: 1;
+}
+
+.threshold-skip:hover {
+  color: var(--c-ivory);
+  border-color: var(--c-vermilion);
+}
+
+@media (pointer: coarse) {
+  .threshold-skip {
+    cursor: pointer;
+  }
+}
+
+/* Respect reduced motion: skip straight to a soft cross-fade,
+   no circle gymnastics, no flash. */
+@media (prefers-reduced-motion: reduce) {
+  .threshold-gate {
+    transition: opacity 0.5s ease;
+  }
+  .threshold-circle-group,
+  .threshold-sun,
+  .threshold-mark,
+  .threshold-line {
+    transition: opacity 0.5s ease !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .threshold-gate.gate-iris {
+    clip-path: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .threshold-field {
+    width: min(78vw, 420px);
+    height: min(78vw, 420px);
+  }
+  .threshold-mark {
+    font-size: 1.05rem;
+    letter-spacing: 0.22em;
+  }
+  .threshold-line {
+    font-size: 0.6875rem;
+    padding: 0 24px;
+  }
+}
+
+/* Subtle Wabi-Sabi Paper Grain Texture */
+.wabi-sabi-grain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.032;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Signature Sunrise Light Gradient (Subtle dawn progression across page) */
+.sunrise-ambient-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle at 50% 10%, rgba(182, 83, 60, 0.08) 0%, rgba(200, 169, 107, 0.04) 30%, transparent 65%);
+  opacity: 0.55;
+  /* No CSS transition here: opacity/transform are scrubbed frame-by-frame
+     by GSAP ScrollTrigger (see initScrollLinkedParallax in script.js) — a
+     CSS transition on the same properties would fight the scrub and read
+     as laggy/rubber-banded. */
+}
+
+/* ==========================================================================
+   VISUAL DEPTH SYSTEM — ENVIRONMENTAL PARALLAX FIELD
+   A fixed, whole-page atmosphere sitting behind every section (most of
+   which are transparent — see "Let the field breathe through" below).
+   Six conceptual planes, five of them living in this fixed field:
+
+     Layer 1  .depth-l1   distant atmosphere (gradient / haze / far light)
+     Layer 2  .depth-l2   distant landscape — abstract ink-wash ridge
+     Layer 3  .depth-l3   midground structures — thin architectural lines
+     Layer 4  .depth-l4   the Ikigai mark, faint, drifting, watermark-scale
+     Layer 5  .depth-l5   foreground motes + one still silhouette anchor
+     Layer 6  —           real content (typography, cards) — untouched here
+
+   Deliberately few DOM nodes (under 20 total across all five layers,
+   no particle loops). Depth reads from CONTRAST, not density: layer 1's
+   void never moves, its glow only breathes; layer 2 drifts almost
+   nothing; layer 5's vignette stays still while its motes respond most
+   to scroll. Every scroll-linked transform is written by depth.js as a
+   plain `translate3d` (GPU-friendly), never a CSS transition — see the
+   note on .sunrise-ambient-layer above for why transitions and scrubbed
+   transforms fight each other. Ambient (non-scroll) motion — the glow's
+   breathing, the mark's slow rotation, each mote's independent float —
+   is pure CSS `animation`, so it keeps running smoothly between scroll
+   frames instead of being recomputed in JS.
+   ========================================================================== */
+.depth-field {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -10;
+  contain: strict;
+}
+
+/* ---- Layer 1 — distant atmosphere ---- */
+.depth-l1 {
+  position: absolute;
+  inset: -12% -6%;
+}
+
+.depth-l1__void {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(200, 169, 107, 0.05) 0%, transparent 58%),
+    radial-gradient(ellipse 70% 50% at 88% 92%, rgba(182, 83, 60, 0.045) 0%, transparent 62%),
+    linear-gradient(180deg, #14211B 0%, var(--c-forest-dark) 32%, #16241D 68%, #101B16 100%);
+  /* No animation — the one plane in the whole system that is
+     permanently still. Everything else is measured against this. */
+}
+
+.depth-l1__glow {
+  position: absolute;
+  top: 4%;
+  right: 10%;
+  width: 42vw;
+  height: 42vw;
+  max-width: 620px;
+  max-height: 620px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 169, 107, 0.11) 0%, rgba(200, 169, 107, 0.04) 42%, transparent 72%);
+  filter: blur(4px);
+  animation: depthGlowBreathe 24s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes depthGlowBreathe {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.06); }
+}
+
+/* ---- Layer 2 — distant landscape (abstract ink-wash ridge) ---- */
+.depth-l2 {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  bottom: -4%;
+  height: 44vh;
+  min-height: 240px;
+  will-change: transform;
+}
+
+.depth-l2__ridge {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.depth-l2__ridge .ridge-far {
+  fill: rgba(64, 92, 78, 0.30);
+}
+
+.depth-l2__ridge .ridge-near {
+  fill: rgba(20, 33, 27, 0.55);
+}
+
+/* ---- Layer 3 — midground structures (thin architectural lines) ---- */
+.depth-l3 {
+  position: absolute;
+  inset: -6% 0 0 0;
+  height: 112%;
+  will-change: transform;
+}
+
+.depth-l3__structures {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.depth-l3__structures .struct-line {
+  stroke: rgba(245, 241, 232, 0.08);
+  stroke-width: 1;
+}
+
+.depth-l3__structures .struct-line--soft {
+  stroke: rgba(245, 241, 232, 0.045);
+}
+
+.depth-l3__structures .struct-node {
+  fill: rgba(200, 169, 107, 0.22);
+}
+
+/* ---- Layer 4 — the Ikigai mark, watermark-scale ---- */
+.depth-l4 {
+  position: absolute;
+  top: 6%;
+  right: -11vw;
+  width: 40vw;
+  max-width: 580px;
+  min-width: 320px;
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.depth-l4__mark {
+  width: 100%;
+  height: auto;
+  display: block;
+  transform-origin: 50% 50%;
+  animation: depthMarkDrift 160s linear infinite;
+}
+
+.depth-l4__mark .mark-circle {
+  fill: none;
+  stroke: var(--c-gold);
+  stroke-width: 1;
+  opacity: 0.14;
+}
+
+.depth-l4__mark .mark-circle:nth-of-type(odd) {
+  stroke: var(--c-vermilion-tint);
+  opacity: 0.10;
+}
+
+@keyframes depthMarkDrift {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ---- Layer 5 — foreground: still anchor + a handful of motes ---- */
+.depth-l5 {
+  position: absolute;
+  inset: 0;
+}
+
+.depth-l5__vignette {
+  position: absolute;
+  left: -8%;
+  bottom: -10%;
+  width: 46vw;
+  height: 46vw;
+  max-width: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 27, 22, 0.85) 0%, rgba(16, 27, 22, 0.35) 46%, transparent 72%);
+  /* Deliberately no animation, no scroll transform — this is the
+     "stays still" foreground counterweight to the motes below. */
+}
+
+.depth-mote-wrap {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  will-change: transform;
+}
+
+.depth-mote {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(245, 241, 232, 0.55);
+  box-shadow: 0 0 7px 2px rgba(245, 241, 232, 0.10);
+  animation: depthMoteFloat 11s ease-in-out infinite;
+  animation-delay: var(--mote-delay, 0s);
+  animation-duration: var(--mote-dur, 11s);
+}
+
+.depth-mote--gold {
+  background: rgba(200, 169, 107, 0.65);
+  box-shadow: 0 0 8px 2px rgba(200, 169, 107, 0.14);
+}
+
+@keyframes depthMoteFloat {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50%      { transform: translateY(-14px); opacity: 0.95; }
+}
+
+/* Depth field responsiveness: fewer, lighter elements on small
+   viewports rather than the same field scaled down. */
+@media (max-width: 640px) {
+  .depth-l4 { width: 60vw; opacity: 0.4; }
+  .depth-l1__glow { width: 60vw; height: 60vw; filter: blur(2px); }
+  .depth-mote-wrap:nth-last-of-type(-n + 2) { display: none; }
+}
+
+/* Depth field takes its cues from the same reduced-motion rule as the
+   rest of the site (see the global *, *::before, *::after block later
+   in this file) — animations there collapse to ~0s, and depth.js checks
+   motion.reducedMotion before writing any scroll-linked transform, so
+   under reduced motion the field simply holds still as a quiet backdrop. */
+
+/* Fixed Scroll Progress Line */
+.scroll-progress-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  transform: scaleY(0);
+  transform-origin: top;
+  background: linear-gradient(to bottom, var(--c-vermilion), var(--c-gold));
+  z-index: 1001;
+  pointer-events: none;
+  /* Driven by a GSAP ScrollTrigger scrub (transform: scaleY) rather than
+     the `height` property, so reading scroll progress never triggers
+     layout. No CSS transition: the scrub already supplies the easing. */
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 36px;
+  padding-right: 36px;
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background: var(--c-vermilion-soft);
+  color: var(--c-ivory);
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-vermilion);
+  outline-offset: 3px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-cinematic);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: inherit;
+}
+
+/* ==========================================================================
+   CINEMATIC TEXT & SECTION FADE-IN ANIMATION SYSTEM
+   ========================================================================== */
+.fade-in-on-scroll {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.fade-in-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered delay modifiers for editorial text rhythm */
+.fade-delay-1 { transition-delay: 0.1s; }
+.fade-delay-2 { transition-delay: 0.2s; }
+.fade-delay-3 { transition-delay: 0.3s; }
+.fade-delay-4 { transition-delay: 0.4s; }
+.fade-delay-5 { transition-delay: 0.5s; }
+
+/* 1. MASK REVEALS & STAGGERED TYPOGRAPHY */
+.mask-line {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  vertical-align: top;
+}
+
+.mask-line-inner {
+  display: inline-block;
+  transform: translateY(115%);
+  opacity: 0;
+  transition: transform 1.25s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.mask-reveal-title.revealed .mask-line-inner,
+.mask-reveal-tagline.revealed .mask-line-inner {
+  transform: translateY(0%);
+  opacity: 1;
+}
+
+.mask-reveal-tagline .mask-line:nth-child(2) .mask-line-inner {
+  transition-delay: 0.18s;
+}
+
+/* 2. CLIP-PATH TRANSITIONS (Architectural paper & ink edge reveals) */
+.pillar-card,
+.dossier-card,
+.identity-card,
+.dimension-card {
+  clip-path: inset(0% 0% 0% 0% round 6px);
+  transition: transform var(--dur-med) var(--ease-cinematic),
+              border-color var(--dur-med) var(--ease-cinematic),
+              box-shadow var(--dur-med) var(--ease-cinematic),
+              clip-path 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.pillar-card::before,
+.dossier-card::before,
+.identity-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--c-vermilion), transparent);
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+  transition: clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pillar-card:hover::before,
+.dossier-card:hover::before,
+.identity-card:hover::before {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+/* 3. SCALE TRANSITIONS (Tactile depth on hover & active) */
+.scale-on-hover {
+  transition: transform 0.4s var(--ease-cinematic);
+}
+
+.scale-on-hover:hover {
+  transform: scale(1.035);
+}
+
+.btn-primary-vermilion,
+.btn-secondary-outline,
+.btn-nav-vermilion {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s ease,
+              border-color 0.25s ease;
+}
+
+.btn-primary-vermilion:active,
+.btn-secondary-outline:active {
+  transform: scale(0.97);
+}
+
+/* 4. LINE DRAWING ANIMATION (SVG Stroke-Dashoffset Flow) */
+.line-draw-active {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  transition: stroke-dashoffset 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.line-draw-active.drawn {
+  stroke-dashoffset: 0;
+}
+
+/* 5. INTERACTIVE MAGNETIC & CURSOR INTERACTION */
+.custom-cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  background-color: var(--c-vermilion);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease, height 0.2s ease, opacity 0.3s ease, background-color 0.2s ease;
+  opacity: 0;
+}
+
+.custom-cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(245, 241, 232, 0.35);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s ease,
+              background-color 0.3s ease,
+              opacity 0.3s ease;
+  opacity: 0;
+}
+
+body.cursor-hover .custom-cursor-ring {
+  width: 54px;
+  height: 54px;
+  border-color: var(--c-vermilion);
+  background-color: rgba(182, 83, 60, 0.08);
+}
+
+body.cursor-hover .custom-cursor-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--c-gold);
+}
+
+@media (pointer: coarse) {
+  .custom-cursor-dot,
+  .custom-cursor-ring {
+    display: none !important;
+  }
+
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: auto !important;
+  }
+}
+
+/* 6. NUMBER INTERPOLATION DISPLAY STYLES */
+.interpolate-number {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.4s ease;
+}
+
+/* 7. POSITION MORPHING & PARALLAX TRANSFORM INTERPOLATION */
+.parallax-layer {
+  will-change: transform;
+  transition: transform 0.1s linear;
+}
+
+/* 8. SECTION NUMBER MORPHING ANIMATION (Scale + Blur + Position Interpolation) */
+.section-system-tracker {
+  position: fixed;
+  bottom: 32px;
+  left: 36px;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px 10px 14px;
+  background: rgba(26, 40, 33, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--c-hairline-strong);
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s var(--ease-cinematic);
+}
+
+.section-system-tracker.is-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tracker-morph-box {
+  width: 38px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(182, 83, 60, 0.16);
+  border: 1px solid var(--c-vermilion);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tracker-morph-num {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--c-ivory);
+  letter-spacing: 0.05em;
+  display: inline-block;
+  will-change: transform, opacity, filter;
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.45s ease,
+              filter 0.45s ease;
+}
+
+/* Morphing states */
+.tracker-morph-num.morph-out-up {
+  transform: translateY(-24px) scale(0.65);
+  filter: blur(5px);
+  opacity: 0;
+}
+
+.tracker-morph-num.morph-in-down {
+  transform: translateY(24px) scale(1.4);
+  filter: blur(5px);
+  opacity: 0;
+}
+
+.tracker-morph-num.morph-out-down {
+  transform: translateY(24px) scale(0.65);
+  filter: blur(5px);
+  opacity: 0;
+}
+
+.tracker-morph-num.morph-in-up {
+  transform: translateY(-24px) scale(1.4);
+  filter: blur(5px);
+  opacity: 0;
+}
+
+.tracker-label-box {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.tracker-sys-prefix {
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  color: var(--c-gold);
+  text-transform: uppercase;
+}
+
+.tracker-sec-name {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--c-ink-light);
+  text-transform: uppercase;
+  transition: opacity 0.3s ease;
+}
+
+/* In-section Tag Pill Number Morphing Container */
+.section-tag-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.pill-morph-num {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  will-change: transform, opacity, filter;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.5s ease,
+              filter 0.5s ease;
+}
+
+.pill-morph-num.pill-morph-active {
+  animation: numberMorphPulse 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes numberMorphPulse {
+  0% {
+    transform: scale(0.7) translateY(-8px);
+    filter: blur(4px);
+    opacity: 0.2;
+    color: var(--c-gold);
+  }
+  50% {
+    transform: scale(1.22) translateY(0);
+    filter: blur(1px);
+    opacity: 0.9;
+    color: var(--c-vermilion);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+    opacity: 1;
+    color: var(--c-vermilion);
+  }
+}
+
+@keyframes textRevealUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   EDITORIAL NAVIGATION BAR
+   ========================================================================== */
+.ikigai-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--nav-height);
+  z-index: 1000;
+  background: rgba(26, 40, 33, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--c-hairline);
+  transition: border-color var(--dur-med) var(--ease-cinematic), 
+              background var(--dur-med) var(--ease-cinematic),
+              box-shadow var(--dur-med) var(--ease-cinematic);
+}
+
+.ikigai-nav .nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-serif);
+  color: var(--c-ivory);
+}
+
+.brand-sun-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-vermilion);
+  display: inline-block;
+  box-shadow: 0 0 8px rgba(182, 83, 60, 0.5);
+}
+
+.brand-text {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.brand-dot {
+  color: var(--c-vermilion);
+  margin: 0 0.5px;
+}
+
+.brand-subtext-inline {
+  font-size: 0.82em;
+  font-weight: 500;
+  color: var(--c-ink-light);
+  font-style: italic;
+}
+
+.brand-subtext {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--c-ink-muted);
+  letter-spacing: 0.05em;
+  margin-left: 2px;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  list-style: none;
+}
+
+.nav-link {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--c-ink-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color var(--dur-fast) var(--ease-cinematic);
+  position: relative;
+  padding: 6px 0;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--c-ivory);
+}
+
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--c-vermilion);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-nav-ghost {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--c-ivory);
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--c-hairline-strong);
+  transition: all var(--dur-fast) var(--ease-cinematic);
+}
+
+.btn-nav-ghost:hover {
+  background: var(--c-forest-subtle);
+  border-color: var(--c-ivory);
+}
+
+.btn-nav-vermilion {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--c-vermilion);
+  padding: 8px 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(182, 83, 60, 0.25);
+  transition: all var(--dur-fast) var(--ease-cinematic);
+}
+
+.btn-nav-vermilion:hover {
+  background: var(--c-vermilion-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(182, 83, 60, 0.35);
+}
+
+.btn-arrow {
+  transition: transform var(--dur-fast) var(--ease-cinematic);
+  font-family: var(--font-sans);
+}
+
+.btn-nav-vermilion:hover .btn-arrow,
+.btn-primary-vermilion:hover .btn-arrow {
+  transform: translateX(3px);
+}
+
+.btn-secondary-outline:hover .btn-arrow {
+  transform: translate(2px, -2px);
+}
+
+/* Mobile Nav Toggle */
+.nav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.nav-burger span {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background: var(--c-ivory);
+  transition: transform var(--dur-fast) var(--ease-cinematic);
+}
+
+/* ==========================================================================
+   HERO SECTION: SIGNATURE 4-CIRCLE CONVERGENCE EXPERIENCE
+   ========================================================================== */
+.hero-sanctuary {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: calc(var(--nav-height) + 40px);
+  padding-bottom: 60px;
+  position: relative;
+  /* Transparent so the fixed .depth-field atmosphere reads through —
+     the forest tone still comes from the field's own layer 1 gradient. */
+  background-color: transparent;
+}
+
+.hero-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  position: relative;
+}
+
+.hero-top-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--c-ink-muted);
+  margin-bottom: 36px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--c-hairline);
+  background: rgba(50, 73, 62, 0.60);
+}
+
+.marker-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-vermilion);
+}
+
+/* 2-Column Split Grid: Left Text Block, Right Ikigai Stage */
+.hero-split-grid {
+  display: grid;
+  grid-template-columns: 1.18fr 0.82fr;
+  gap: 48px;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+
+/* Monumental Hero Typographic Text Block (Left Aligned) */
+.hero-content-block {
+  max-width: 680px;
+  margin: 0;
+  text-align: left;
+  /* Pivot for the scroll-scrubbed recession in initHeroWorldTransition —
+     anchored top-left so it settles back in place rather than scaling
+     from its center. */
+  transform-origin: left top;
+  will-change: transform, opacity, filter;
+}
+
+.hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(4.2rem, 9.8vw, 8.2rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 0.92;
+  color: var(--c-ivory);
+  margin-bottom: 24px;
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.hero-title-dot {
+  color: var(--c-vermilion);
+  margin: 0 1px;
+}
+
+.hero-title-sub {
+  font-size: 0.58em;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--c-ink-light);
+  font-style: italic;
+  font-family: var(--font-serif);
+}
+
+.hero-tagline {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 3.8vw, 3.2rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--c-ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 22px;
+  text-align: left;
+}
+
+.hero-tagline em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--c-vermilion);
+}
+
+.hero-supporting {
+  font-family: var(--font-sans);
+  font-size: clamp(1rem, 1.35vw, 1.1875rem);
+  font-weight: 400;
+  color: var(--c-ink-body);
+  max-width: 580px;
+  margin: 0 0 36px 0;
+  line-height: 1.75;
+  text-align: left;
+}
+
+.hero-cta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.btn-primary-vermilion {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--c-vermilion);
+  padding: 13px 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(182, 83, 60, 0.28);
+  transition: all var(--dur-fast) var(--ease-cinematic);
+}
+
+.btn-primary-vermilion:hover {
+  background: var(--c-vermilion-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(182, 83, 60, 0.38);
+}
+
+.btn-secondary-outline {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--c-ivory);
+  background: transparent;
+  padding: 13px 28px;
+  border-radius: 999px;
+  border: 1px solid var(--c-hairline-strong);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--dur-fast) var(--ease-cinematic);
+}
+
+.btn-secondary-outline:hover {
+  background: var(--c-forest-subtle);
+  border-color: var(--c-ivory);
+  transform: translateY(-2px);
+}
+
+/* Signature 4-Circle Convergence Visual Stage (Right Column) */
+.hero-convergence-stage {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  /* Pivot for the scroll-scrubbed "travels forward and past" move in
+     initHeroWorldTransition. */
+  transform-origin: 50% 50%;
+  will-change: transform, opacity, filter;
+}
+
+.hero-vermilion-sun {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--c-vermilion);
+  z-index: 3;
+  box-shadow: 0 0 24px rgba(182, 83, 60, 0.65);
+  animation: sunGlow 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes sunGlow {
+  0% { transform: scale(1); box-shadow: 0 0 16px rgba(182, 83, 60, 0.4); }
+  100% { transform: scale(1.22); box-shadow: 0 0 32px rgba(182, 83, 60, 0.75); }
+}
+
+.hero-circles-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hero-guide-axis {
+  stroke: rgba(245, 241, 232, 0.10);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.hero-circle-group {
+  transition: transform 1.6s var(--ease-cinematic);
+  transform-origin: 300px 300px;
+}
+
+.hero-pillar-circle {
+  stroke: rgba(245, 241, 232, 0.22);
+  stroke-width: 1;
+  fill: rgba(200, 169, 107, 0.03);
+  transition: stroke 0.8s ease, fill 0.8s ease, stroke-width 0.4s ease;
+}
+
+.hero-circle-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  fill: var(--c-ink-muted);
+  opacity: 0.85;
+  transition: opacity 0.6s ease;
+}
+
+/* Convergence states */
+.hero-convergence-stage.converged .group-love {
+  transform: translateY(45px);
+}
+.hero-convergence-stage.converged .group-good {
+  transform: translateX(-45px);
+}
+.hero-convergence-stage.converged .group-world {
+  transform: translateY(-45px);
+}
+.hero-convergence-stage.converged .group-sustain {
+  transform: translateX(45px);
+}
+
+.hero-convergence-stage.converged .hero-pillar-circle {
+  stroke: var(--c-vermilion);
+  stroke-width: 1.25;
+  fill: rgba(182, 83, 60, 0.05);
+}
+
+.hero-center-overlap {
+  stroke: var(--c-gold);
+  stroke-width: 1;
+  fill: rgba(200, 169, 107, 0.08);
+  stroke-dasharray: 2 2;
+}
+
+.hero-center-ikigai-mark {
+  position: absolute;
+  z-index: 4;
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--c-ivory);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 1s var(--ease-cinematic) 0.6s, transform 1s var(--ease-cinematic) 0.6s;
+  pointer-events: none;
+}
+
+.hero-convergence-stage.converged .hero-center-ikigai-mark {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Grounding Perimeter Data Bar */
+.hero-grounding-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  width: 100%;
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--c-hairline);
+  text-align: left;
+}
+
+.grounding-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.grounding-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  color: var(--c-ink-faint);
+  text-transform: uppercase;
+}
+
+.grounding-value {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+
+/* ==========================================================================
+   GENERIC SECTION ARCHITECTURE (MA / GENEROUS WHITESPACE)
+   ========================================================================== */
+.section-sanctuary {
+  padding: 110px 0;
+  position: relative;
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.section-header-editorial {
+  margin-bottom: 56px;
+}
+
+.section-tag-pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--c-vermilion);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.section-heading-serif {
+  font-family: var(--font-serif);
+  font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--c-ink);
+  letter-spacing: -0.015em;
+}
+
+.section-sub-editorial {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  color: var(--c-ink-muted);
+  max-width: 640px;
+  margin-top: 12px;
+  line-height: 1.65;
+}
+
+/* ==========================================================================
+   SECTION 1: "WHY IKIGAI?" (THE 4 PILLARS & PHILOSOPHY)
+   ========================================================================== */
+#why-ikigai {
+  /* Pivot for the scroll-scrubbed arrival in initHeroWorldTransition —
+     anchored top-center so the section rises and settles into place
+     rather than growing from its middle. */
+  transform-origin: 50% 0%;
+}
+
+.philosophy-lead-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 48px;
+  align-items: center;
+  margin-bottom: 64px;
+}
+
+.philosophy-manifesto-text {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.lead-quote {
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--c-ink);
+}
+
+.lead-quote.emphasis-vermilion {
+  color: var(--c-vermilion);
+  font-style: italic;
+}
+
+.philosophy-narrative {
+  font-size: 1.0625rem;
+  color: var(--c-ink-body);
+  line-height: 1.75;
+}
+
+.philosophy-core-axiom {
+  margin-top: 12px;
+  padding: 16px 20px;
+  background: var(--c-forest-subtle);
+  border-left: 3px solid var(--c-vermilion);
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-style: italic;
+  color: var(--c-ink);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.axiom-bracket {
+  color: var(--c-vermilion);
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* Recurring 4 Circles Signature Visual Motif */
+.four-circles-signature-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px;
+  background: var(--c-forest-subtle);
+  border: 1px solid var(--c-hairline);
+  border-radius: 8px;
+}
+
+.signature-svg {
+  width: 220px;
+  height: 220px;
+}
+
+.sig-circle {
+  stroke: rgba(245, 241, 232, 0.22);
+  stroke-width: 1.25;
+  fill: none;
+  transition: all 0.5s var(--ease-cinematic);
+}
+
+.four-circles-signature-badge:hover .sig-circle {
+  stroke: var(--c-vermilion);
+}
+
+.sig-center-dot {
+  fill: var(--c-vermilion);
+}
+
+.signature-caption {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.15em;
+  color: var(--c-ink-muted);
+  margin-top: 16px;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   THE IKIGAI JOURNEY — one continuously-transforming particle field
+   standing in for four separate pillar cards. A tall scroll track
+   (--journey-vh) holds a viewport-height frame pinned via `position:
+   sticky` (no GSAP pin/spacer needed); journey.js reads scroll progress
+   straight from layout and redraws the canvas every frame, crossfading
+   the matching text stage on top. Full-bleed — deliberately outside
+   .container, so the field itself isn't boxed in the way the text above
+   it is. See journey.js for the five states (love/skill/world/reward/
+   purpose) and their layout math.
+   ========================================================================== */
+.ikigai-journey {
+  --journey-vh: 500vh;
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  height: var(--journey-vh);
+}
+
+.ikigai-journey__frame {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(26, 40, 33, 0) 0%, rgba(26, 40, 33, 0.35) 100%);
+}
+
+.ikigai-journey__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ikigai-journey__rail {
+  position: absolute;
+  right: clamp(20px, 4vw, 56px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 3;
+}
+
+.ikigai-journey__rail-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-hairline-strong);
+  transition: background var(--dur-med) var(--ease-cinematic),
+              transform var(--dur-med) var(--ease-cinematic);
+}
+
+.ikigai-journey__rail-dot.is-active {
+  background: var(--c-vermilion);
+  transform: scale(1.7);
+}
+
+.ikigai-journey__stage {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 36px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  will-change: opacity, transform;
+}
+
+.ikigai-journey__eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--c-vermilion);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.ikigai-journey__title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.1rem, 5.2vw, 3.6rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--c-ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+.ikigai-journey__title--purpose {
+  color: var(--c-vermilion);
+  font-style: italic;
+}
+
+.ikigai-journey__desc {
+  font-size: 1.0625rem;
+  color: var(--c-ink-body);
+  line-height: 1.7;
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .ikigai-journey { --journey-vh: 420vh; }
+  .ikigai-journey__rail { display: none; }
+}
+
+@media (max-width: 768px) {
+  .ikigai-journey { --journey-vh: 360vh; }
+  .ikigai-journey__stage { padding: 0 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ikigai-journey { --journey-vh: 100vh; }
+}
+
+/* ==========================================================================
+   SECTION 2: "NOT JUST ANOTHER HACKATHON" (DEEP FOREST CONTEMPLATIVE BREAK)
+   ========================================================================== */
+.section-forest-contrast {
+  /* Transparent so the fixed .depth-field atmosphere reads through
+     here too — a soft dark scrim keeps the text contrast this section
+     needs without repainting a flat, opaque plane over the field. */
+  background-color: transparent;
+  background-image: linear-gradient(180deg, rgba(16, 27, 22, 0.35) 0%, rgba(16, 27, 22, 0.55) 50%, rgba(16, 27, 22, 0.35) 100%);
+  color: var(--c-ivory);
+  padding: 130px 0;
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid var(--c-hairline);
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.forest-inner-layout {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.forest-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--c-vermilion);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.forest-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.6rem, 5.8vw, 4.8rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: #ffffff;
+  letter-spacing: -0.015em;
+  margin-bottom: 32px;
+}
+
+.forest-message-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.forest-lead {
+  font-family: var(--font-serif);
+  font-size: clamp(1.4rem, 2.5vw, 2rem);
+  font-weight: 400;
+  color: var(--c-ivory-subtle);
+  line-height: 1.35;
+}
+
+.forest-highlight {
+  font-family: var(--font-serif);
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--c-gold);
+  line-height: 1.3;
+}
+
+.forest-text {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  color: rgba(245, 241, 232, 0.82);
+  line-height: 1.75;
+  max-width: 720px;
+  margin: 12px auto 0;
+}
+
+.forest-accent-line {
+  width: 48px;
+  height: 2px;
+  background: var(--c-vermilion);
+  margin: 40px auto 0;
+}
+
+/* ==========================================================================
+   SECTION 3: PARTICIPANT IDENTITIES (SEEKERS, MAKERS, MENTORS, PARTNERS)
+   ========================================================================== */
+.identities-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.identity-card {
+  background: var(--c-forest-subtle);
+  border: 1px solid var(--c-hairline);
+  border-radius: 6px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform var(--dur-med) var(--ease-cinematic),
+              border-color var(--dur-med) var(--ease-cinematic);
+}
+
+.identity-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--c-vermilion);
+}
+
+.identity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.identity-code {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--c-ink-muted);
+}
+
+.identity-role-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--c-vermilion);
+  padding: 2px 8px;
+  background: var(--c-vermilion-soft);
+  border-radius: 4px;
+}
+
+.identity-title {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--c-ink);
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+
+.identity-desc {
+  font-size: 0.9375rem;
+  color: var(--c-ink-body);
+  line-height: 1.65;
+  margin-bottom: 24px;
+}
+
+.identity-trait {
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--c-ink-muted);
+  border-top: 1px solid var(--c-hairline);
+  padding-top: 14px;
+}
+
+/* ==========================================================================
+   SECTION 4: THE HACKATHON JOURNEY — one continuously-evolving scene
+   standing in for six separate stage cards. A tall scroll track
+   (--hj-vh) holds a viewport-height frame pinned via `position: sticky`;
+   hackathon-journey.js reads scroll progress straight from layout and
+   redraws the canvas every frame, crossfading the matching stage text
+   on top. Full-bleed — deliberately outside .container, so the scene
+   isn't boxed in the way the header above it is.
+
+   The six states echo the brief's own descriptions of the arc:
+     DISCOVER    — the environment opens: a wide, loose scatter of light.
+     DEFINE      — it narrows and focuses onto a single point.
+     BUILD       — geometry appears: grid lines, structure, scaffolding.
+     COLLABORATE — separate elements draw connecting lines between them.
+     PRESENT     — the composition opens back up, wide and confident.
+     IMPACT      — everything converges toward one final point of light.
+   See hackathon-journey.js for the per-stage layout math.
+   ========================================================================== */
+.section-sanctuary--flush {
+  padding-bottom: 0;
+}
+
+.hack-journey {
+  --hj-vh: 600vh;
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  height: var(--hj-vh);
+  margin-top: 56px;
+}
+
+.hack-journey__frame {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(26, 40, 33, 0) 0%, rgba(26, 40, 33, 0.3) 100%);
+  border-top: 1px solid var(--c-hairline);
+  border-bottom: 1px solid var(--c-hairline);
+}
+
+.hack-journey__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hack-journey__rail {
+  position: absolute;
+  right: clamp(20px, 4vw, 64px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 3;
+}
+
+.hack-journey__rail-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-hairline-strong);
+  transition: background var(--dur-med) var(--ease-cinematic),
+              transform var(--dur-med) var(--ease-cinematic);
+}
+
+.hack-journey__rail-dot.is-active {
+  background: var(--c-vermilion);
+  transform: scale(1.8);
+}
+
+.hack-journey__stages {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hack-journey__stage {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 40px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-50%);
+  will-change: opacity, transform;
+}
+
+.hack-journey__num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--c-vermilion);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.hack-journey__title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.2rem, 5.4vw, 3.8rem);
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--c-ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+.hack-journey__title--impact {
+  color: var(--c-vermilion);
+  font-style: italic;
+}
+
+.hack-journey__desc {
+  font-size: 1.0625rem;
+  color: var(--c-ink-body);
+  line-height: 1.7;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.hack-journey__scrollcue {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(20px, 4vh, 40px);
+  transform: translateX(-50%);
+  z-index: 3;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  color: var(--c-ink-muted);
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: opacity var(--dur-med) var(--ease-cinematic);
+}
+
+.hack-journey__scrollcue::after {
+  content: "";
+  width: 1px;
+  height: 22px;
+  background: linear-gradient(180deg, var(--c-vermilion), transparent);
+  animation: hackJourneyCueDrift 1.8s ease-in-out infinite;
+}
+
+@keyframes hackJourneyCueDrift {
+  0%, 100% { transform: translateY(0); opacity: 0.9; }
+  50% { transform: translateY(6px); opacity: 0.3; }
+}
+
+@media (max-width: 1024px) {
+  .hack-journey { --hj-vh: 480vh; }
+  .hack-journey__rail { display: none; }
+}
+
+@media (max-width: 768px) {
+  .hack-journey { --hj-vh: 420vh; }
+  .hack-journey__stage { padding: 0 26px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hack-journey { --hj-vh: 100vh; }
+  .hack-journey__scrollcue { display: none; }
+
+  /* Static fallback: the pinned single-scene sequence becomes a plain
+     readable stack of all six stages, so no process information is
+     lost just because the scroll-driven scene is skipped. */
+  .hack-journey--static .hack-journey__frame {
+    position: relative;
+    height: auto;
+    min-height: 0;
+    padding: 48px 0;
+  }
+  .hack-journey--static .hack-journey__rail {
+    display: none;
+  }
+  .hack-journey--static .hack-journey__stages {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  .hack-journey--static .hack-journey__stage {
+    position: static;
+    max-width: none;
+    padding: 0;
+    transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   SECTION 5: EXPLORATION VECTORS (CHALLENGES / TRACKS)
+   ========================================================================== */
+.dossier-nav-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--c-hairline);
+  padding-bottom: 14px;
+}
+
+.dossier-filter-tab {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--c-ink-muted);
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: all var(--dur-fast) var(--ease-cinematic);
+}
+
+.dossier-filter-tab:hover {
+  color: var(--c-ivory);
+  background: var(--c-forest-subtle);
+}
+
+.dossier-filter-tab.active {
+  color: var(--c-ivory);
+  background: var(--c-forest-subtle);
+  border-color: var(--c-hairline-strong);
+}
+
+.dossier-stack {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+.dossier-card {
+  background: var(--c-forest-subtle);
+  border: 1px solid var(--c-hairline);
+  border-radius: 6px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform var(--dur-med) var(--ease-cinematic),
+              border-color var(--dur-med) var(--ease-cinematic),
+              box-shadow var(--dur-med) var(--ease-cinematic);
+}
+
+.dossier-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--c-vermilion);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.dossier-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.dossier-card-id {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  color: var(--c-vermilion);
+}
+
+.dossier-card-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--c-ink-muted);
+}
+
+.dossier-card-title {
+  font-family: var(--font-serif);
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: var(--c-ink);
+  margin-bottom: 10px;
+  line-height: 1.25;
+}
+
+.dossier-card-desc {
+  font-size: 0.9375rem;
+  color: var(--c-ink-body);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.dossier-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--c-hairline);
+  padding-top: 16px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--c-vermilion);
+}
+
+/* ==========================================================================
+   SECTION 6: EVENT DETAILS & LOGISTICS (MA / WHITESPACE)
+   ========================================================================== */
+.logistics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.logistics-item {
+  background: var(--c-forest-subtle);
+  border: 1px solid var(--c-hairline);
+  border-radius: 6px;
+  padding: 32px 28px;
+}
+
+.logistics-num {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--c-vermilion);
+  display: block;
+  margin-bottom: 14px;
+}
+
+.logistics-title {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--c-ink-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.logistics-val {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--c-ink);
+  margin-bottom: 10px;
+}
+
+.logistics-note {
+  font-size: 0.875rem;
+  color: var(--c-ink-muted);
+  line-height: 1.55;
+}
+
+/* ==========================================================================
+   SECTION 7: SPONSORS ("THOSE WHO HELP IDEAS BECOME POSSIBLE")
+   ========================================================================== */
+.section-partners {
+  background-color: var(--c-forest-subtle);
+}
+
+.partner-dimensions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 64px;
+}
+
+.dimension-card {
+  background: var(--c-forest-tint);
+  border: 1px solid var(--c-hairline);
+  border-radius: 6px;
+  padding: 32px 24px;
+}
+
+.dim-icon {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-gold);
+  margin-bottom: 14px;
+}
+
+.dimension-card h4 {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--c-ink);
+  margin-bottom: 8px;
+}
+
+.dimension-card p {
+  font-size: 0.9375rem;
+  color: var(--c-ink-body);
+  line-height: 1.6;
+}
+
+/* Controlled Sponsor System Grid */
+.sponsors-controlled-system {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 48px;
+}
+
+.sponsor-tier-card {
+  background: var(--c-forest-tint);
+  border: 1px solid var(--c-hairline);
+  border-radius: 6px;
+  padding: 28px 32px;
+}
+
+.sponsor-tier-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--c-hairline);
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.tier-label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--c-ink);
+}
+
+.tier-note-text {
+  font-size: 0.8125rem;
+  color: var(--c-ink-muted);
+}
+
+.sponsor-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.sponsor-slot {
+  background: var(--c-forest-subtle);
+  border: 1px dashed var(--c-hairline-strong);
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--c-ink-muted);
+  letter-spacing: 0.08em;
+}
+
+.community-alliance-wrap {
+  margin-top: 48px;
+  border-top: 1px solid var(--c-hairline);
+  padding-top: 32px;
+  margin-bottom: 56px;
+}
+
+.alliance-header-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--c-vermilion);
+  margin-bottom: 18px;
+}
+
+.alliance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.alliance-card {
+  background: var(--c-forest-tint);
+  border: 1px solid var(--c-hairline);
+  border-radius: 6px;
+  padding: 24px;
+}
+
+.alliance-partner-name {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--c-ink);
+  margin-bottom: 4px;
+}
+
+.alliance-partner-role {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--c-ink-muted);
+}
+
+/* Partner CTA Banner */
+.partner-cta-banner {
+  background: var(--c-forest-dark);
+  color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid var(--c-hairline);
+  padding: 48px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.cta-banner-title {
+  font-family: var(--font-serif);
+  font-size: 1.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.cta-banner-desc {
+  font-size: 0.95rem;
+  color: rgba(245, 241, 232, 0.85);
+  max-width: 560px;
+}
+
+/* ==========================================================================
+   SECTION 8: FAQ INFORMATION INDEX
+   ========================================================================== */
+.faq-index-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.faq-accordion-item {
+  background: var(--c-forest-subtle);
+  border: 1px solid var(--c-hairline);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color var(--dur-fast) var(--ease-cinematic);
+}
+
+.faq-accordion-item:hover,
+.faq-accordion-item.open {
+  border-color: var(--c-hairline-strong);
+}
+
+.faq-trigger {
+  width: 100%;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+
+.faq-icon {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  color: var(--c-vermilion);
+  transition: transform var(--dur-fast) var(--ease-cinematic);
+}
+
+.faq-accordion-item.open .faq-icon {
+  transform: rotate(45deg);
+}
+
+.faq-panel {
+  display: none;
+  padding: 0 28px 24px;
+  font-size: 0.95rem;
+  color: var(--c-ink-body);
+  line-height: 1.7;
+}
+
+.faq-accordion-item.open .faq-panel {
+  display: block;
+}
+
+/* ==========================================================================
+   SECTION 9: FINAL CONVERGENCE CLIMAX ("MAYBE YOUR IKIGAI STARTS HERE")
+   ========================================================================== */
+.section-climax {
+  padding: 140px 0;
+  text-align: center;
+  position: relative;
+  /* Transparent so the fixed .depth-field atmosphere reads through. */
+  background-color: transparent;
+}
+
+.climax-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.climax-circles-wrap {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 32px;
+}
+
+.climax-circles-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.climax-circle {
+  stroke: var(--c-vermilion);
+  stroke-width: 1.25;
+  fill: none;
+  opacity: 0.65;
+}
+
+.climax-center-dot {
+  fill: var(--c-vermilion);
+}
+
+.climax-heading {
+  font-family: var(--font-serif);
+  font-size: clamp(2.6rem, 6vw, 4.6rem);
+  font-weight: 600;
+  color: var(--c-ink);
+  letter-spacing: -0.015em;
+  margin-bottom: 16px;
+  line-height: 1.1;
+}
+
+.climax-supporting {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-style: italic;
+  color: var(--c-ink-muted);
+  margin-bottom: 40px;
+}
+
+.climax-actions-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   MINIMAL EDITORIAL FOOTER
+   ========================================================================== */
+.ikigai-footer {
+  border-top: 1px solid var(--c-hairline);
+  background: var(--c-forest-dark);
+  padding: 80px 0 32px;
+}
+
+.footer-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 64px;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.footer-sun-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-vermilion);
+}
+
+.footer-brand-title {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--c-ink);
+}
+
+.footer-tagline {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-style: italic;
+  color: var(--c-ink);
+  margin-bottom: 10px;
+}
+
+.footer-philosophy-note {
+  font-size: 0.875rem;
+  color: var(--c-ink-muted);
+  max-width: 380px;
+  line-height: 1.6;
+}
+
+.footer-col-header {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--c-ink);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.footer-links-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: var(--c-ink-muted);
+}
+
+.footer-links-list a:hover {
+  color: var(--c-vermilion);
+}
+
+.footer-bottom-bar {
+  border-top: 1px solid var(--c-hairline);
+  padding-top: 24px;
+}
+
+.footer-bottom-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--c-ink-muted);
+}
+
+.footer-back-to-top a:hover {
+  color: var(--c-ink);
+}
+
+/* ==========================================================================
+   MODAL DIALOG (CHALLENGE / VECTOR DETAILS)
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2000;
+  background: rgba(23, 23, 23, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-card {
+  background: var(--c-forest-subtle);
+  border: 1px solid var(--c-hairline-strong);
+  border-radius: 8px;
+  max-width: 620px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 36px 32px;
+  position: relative;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--c-hairline);
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.modal-code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--c-vermilion);
+  letter-spacing: 0.1em;
+}
+
+.modal-close {
+  font-size: 1.1rem;
+  color: var(--c-ink-muted);
+  cursor: pointer;
+}
+
+.modal-title {
+  font-family: var(--font-serif);
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: var(--c-ink);
+  margin-bottom: 12px;
+}
+
+.modal-desc {
+  font-size: 0.95rem;
+  color: var(--c-ink-body);
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.modal-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  background: var(--c-forest-tint);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  margin-bottom: 24px;
+}
+
+.modal-requirements h4 {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--c-ink);
+  margin-bottom: 10px;
+}
+
+.modal-requirements ul {
+  padding-left: 20px;
+  font-size: 0.875rem;
+  color: var(--c-ink-body);
+  line-height: 1.7;
+}
+
+/* ==========================================================================
+   RETRO CYBER TERMINAL MODAL (KONAMI EASTER EGG)
+   ========================================================================== */
+.terminal-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2000;
+  background: rgba(10, 14, 12, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.terminal-modal-overlay.open {
+  display: flex;
+}
+
+.retro-terminal {
+  background: var(--c-forest-dark);
+  color: #E2EBDD;
+  border: 1px solid rgba(200, 169, 107, 0.3);
+  border-radius: 6px;
+  width: min(720px, 95vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+
+.retro-terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(200, 169, 107, 0.2);
+  color: var(--c-gold);
+  font-weight: 700;
+}
+
+.retro-terminal-logs {
+  padding: 18px;
+  overflow-y: auto;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.6;
+}
+
+.retro-terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid rgba(200, 169, 107, 0.2);
+}
+
+.retro-terminal-input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (MOBILE & TABLET BREAKPOINTS)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .hero-split-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .hero-content-block {
+    max-width: 100%;
+  }
+  .hero-convergence-stage {
+    max-width: 400px;
+    margin: 16px auto 0;
+  }
+  .identities-grid,
+  .partner-dimensions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .logistics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .hero-grounding-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .philosophy-lead-grid {
+    grid-template-columns: 1fr;
+  }
+  .footer-container {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --nav-height: 60px;
+  }
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .hero-title {
+    font-size: clamp(3.2rem, 12vw, 5rem);
+  }
+  .hero-convergence-stage {
+    max-width: 320px;
+  }
+  .nav-menu {
+    position: fixed;
+    top: var(--nav-height);
+    left: 0;
+    width: 100%;
+    background: var(--c-forest-dark);
+    border-bottom: 1px solid var(--c-hairline-strong);
+    flex-direction: column;
+    padding: 24px;
+    display: none;
+  }
+  .nav-menu.open {
+    display: flex;
+  }
+  .btn-nav-ghost {
+    display: none;
+  }
+  .nav-burger {
+    display: flex;
+  }
+  .identities-grid,
+  .partner-dimensions-grid,
+  .logistics-grid,
+  .hero-grounding-bar {
+    grid-template-columns: 1fr;
+  }
+  .section-sanctuary,
+  .section-forest-contrast {
+    padding: 70px 0;
+  }
+  .footer-container {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .footer-bottom-inner {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  .section-system-tracker {
+    bottom: 20px;
+    left: 20px;
+    padding: 8px 14px 8px 10px;
+  }
+  .tracker-morph-box {
+    width: 32px;
+    height: 24px;
+  }
+  .tracker-morph-num {
+    font-size: 0.75rem;
+  }
+}
+
+/* Accessibility: Prefers-Reduced-Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .hero-convergence-stage .hero-circle-group {
+    transform: none !important;
+  }
+  .hero-center-ikigai-mark {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
